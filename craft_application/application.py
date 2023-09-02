@@ -83,8 +83,9 @@ class Application:
     def command_groups(self) -> list[craft_cli.CommandGroup]:
         """Return command groups."""
         lifecycle_commands = commands.get_lifecycle_command_group()
+        other_commands = commands.get_other_command_group()
 
-        return [lifecycle_commands, *self._command_groups]
+        return [lifecycle_commands, other_commands, *self._command_groups]
 
     @property
     def log_path(self) -> pathlib.Path | None:
@@ -124,12 +125,12 @@ class Application:
         Any child classes that override this must either call this directly or must
         provide a valid ``project`` to ``self.services``.
         """
-        self.services.project = self.project
+        #self.services.project = self.project  ### CM:too early
         self.services.set_kwargs(
             "lifecycle",
             cache_dir=self.cache_dir,
             work_dir=self._work_dir,
-            base=self.project.effective_base,
+            #base=self.project.effective_base,
         )
 
     @functools.cached_property
@@ -142,6 +143,7 @@ class Application:
         """Run the application in a managed instance."""
         craft_cli.emit.debug(f"Running {self.app.name} in a managed instance...")
         instance_path = pathlib.PosixPath("/root/project")
+        self.services.project = self.project  ### CM:set it here, if we're in managed mode we must have a project
         with self.services.provider.instance(
             self.project.effective_base, work_dir=self._work_dir
         ) as instance:
@@ -224,7 +226,7 @@ class Application:
     def run(self) -> int:
         """Bootstrap and run the application."""
         dispatcher = self._get_dispatcher()
-        self._configure_services()
+        self._configure_services()    ### CM:too early?
         craft_cli.emit.trace("Preparing application...")
 
         return_code = 1  # General error
@@ -242,6 +244,7 @@ class Application:
                 craft_cli.emit.debug(f"Running {self.app.name} {command.name} on host")
                 return_code = dispatcher.run() or 0
             elif not self.services.ProviderClass.is_managed():
+                ### CM:Mux platform matrix?
                 self.run_managed()
                 return_code = 0
             else:

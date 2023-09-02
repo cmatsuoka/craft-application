@@ -18,6 +18,7 @@ import dataclasses
 from typing import TYPE_CHECKING, Any
 
 from craft_application import errors, models, services
+from craft_cli import emit
 
 if TYPE_CHECKING:
     from craft_application.application import AppMetadata
@@ -39,6 +40,7 @@ class ServiceFactory:
     PackageClass: type[services.PackageService]
     LifecycleClass: type[services.LifecycleService] = services.LifecycleService
     ProviderClass: type[services.ProviderService] = services.ProviderService
+    ### CM: SetupClass: type[services.SetupService]
 
     project: models.Project = None  # type: ignore[assignment]
 
@@ -71,12 +73,13 @@ class ServiceFactory:
         instantiated service as an instance attribute, allowing the same service
         instance to be reused for the entire run of the application.
         """
-        if self.project is None:  # pyright: ignore[reportUnnecessaryComparison]
-            raise errors.ApplicationError(
-                "ServiceFactory requires a project to be set before getting a service.",
-                app_name=self.app.name,
-                docs_url="https://github.com/canonical/craft-application/pull/40#discussion_r1253593262",
-            )
+        emit.debug(f"Obtaining service '{service}'")
+        #if self.project is None:  # pyright: ignore[reportUnnecessaryComparison]
+        #    raise errors.ApplicationError(
+        #        "ServiceFactory requires a project to be set before getting a service.",
+        #        app_name=self.app.name,
+        #        docs_url="https://github.com/canonical/craft-application/pull/40#discussion_r1253593262",
+        #    )
         service_cls_name = "".join(word.title() for word in service.split("_"))
         service_cls_name += "Class"
         classes = dataclasses.asdict(self)
@@ -86,6 +89,7 @@ class ServiceFactory:
         if issubclass(cls, services.BaseService):
             kwargs = self._service_kwargs.get(service, {})
             instance = cls(self.app, self.project, **kwargs)
+            instance.setup()
             setattr(self, service, instance)
             # Mypy and pyright interpret this differently.
             # Pyright

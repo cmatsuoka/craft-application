@@ -124,7 +124,9 @@ class ProviderService(base.BaseService):
         This method should be overridden by a specific application if it intends to
         use base names that don't align to a "distro:version" naming convention.
         """
+        emit.debug(f"Get base {base_name!r}")
         alias = bases.get_base_alias(base_name)
+        emit.debug(f"Base alias: {alias!r}")
         base_class = bases.get_base_from_alias(alias)
         return base_class(
             alias=alias,
