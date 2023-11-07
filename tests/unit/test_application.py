@@ -510,6 +510,10 @@ def test_work_dir_project_non_managed(monkeypatch, app_metadata, fake_services):
     assert app._work_dir == pathlib.Path.cwd()
 
     # Make sure the project is loaded correctly (from the cwd)
+    arch = get_host_architecture()
+    app._get_project(arch, arch)
+    assert app.project is not None
+
     assert app.project.name == "myproject"
     assert app.project.version == "1.0"
 
@@ -522,6 +526,10 @@ def test_work_dir_project_managed(monkeypatch, app_metadata, fake_services):
     assert app._work_dir == pathlib.PosixPath("/root")
 
     # Make sure the project is loaded correctly (from the cwd)
+    arch = get_host_architecture()
+    app._get_project(arch, arch)
+    assert app.project is not None
+
     assert app.project.name == "myproject"
     assert app.project.version == "1.0"
 
@@ -551,9 +559,13 @@ def environment_project(monkeypatch, tmp_path):
 @pytest.mark.usefixtures("environment_project")
 def test_application_expand_environment(app_metadata, fake_services):
     app = application.Application(app_metadata, fake_services)
-    project = app.project
 
-    assert project.parts["mypart"]["source-tag"] == "v1.2.3"
+    # Make sure the project is loaded correctly (from the cwd)
+    arch = get_host_architecture()
+    app._get_project(arch, arch)
+    assert app.project is not None
+
+    assert app.project.parts["mypart"]["source-tag"] == "v1.2.3"
 
 
 @pytest.fixture()
@@ -588,9 +600,13 @@ def test_application_build_secrets(app_metadata, fake_services, monkeypatch, moc
     spied_set_secrets = mocker.spy(craft_cli.emit, "set_secrets")
 
     app = application.Application(app_metadata, fake_services)
-    project = app.project
 
-    mypart = project.parts["mypart"]
+    # Make sure the project is loaded correctly (from the cwd)
+    arch = get_host_architecture()
+    app._get_project(arch, arch)
+    assert app.project is not None
+
+    mypart = app.project.parts["mypart"]
     assert mypart["source"] == "source-folder/project"
     assert mypart["build-environment"][0]["MY_VAR"] == "secret-value"
 
