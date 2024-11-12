@@ -25,6 +25,7 @@ from craft_application.services.provider import ProviderService
 from craft_application.services.remotebuild import RemoteBuildService
 from craft_application.services.request import RequestService
 from craft_application.services.service_factory import ServiceFactory
+from craft_application.services.testing import TestingService
 
 __all__ = [
     "AppService",
@@ -38,4 +39,5 @@ __all__ = [
     "RemoteBuildService",
     "RequestService",
     "ServiceFactory",
+    "TestingService",
 ]
