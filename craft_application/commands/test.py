@@ -17,13 +17,12 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import tempfile
 from textwrap import dedent
 
 import craft_cli
 
 from . import base
-
-TEMP_FILE_NAME = ".craft-spread.yaml"
 
 
 class TestCommand(base.AppCommand):
@@ -45,10 +44,7 @@ class TestCommand(base.AppCommand):
     def run(self, parsed_args: argparse.Namespace) -> None:  # noqa: ARG002
         """Run the command."""
         craft_cli.emit.progress("Testing project.")
-
-        dest = pathlib.Path(TEMP_FILE_NAME)
-        try:
-            self._services.testing.process_spread_yaml(dest)
-            self._services.testing.run_spread(dest)
-        finally:
-            dest.unlink()
+        with tempfile.TemporaryDirectory(prefix=".craft-", dir=".") as tempdir:
+            destdir = pathlib.Path(tempdir)
+            self._services.testing.process_spread_yaml(destdir)
+            self._services.testing.run_spread(destdir)
