@@ -38,6 +38,7 @@ def get_lifecycle_command_group() -> CommandGroup:
         StageCommand,
         PrimeCommand,
         PackCommand,
+        TestCommand,
     ]
     if not Features().enable_overlay:
         commands.remove(OverlayCommand)
@@ -412,6 +413,65 @@ class PackCommand(LifecycleCommand):
 
         if shell_after:
             _launch_shell()
+
+
+class TestCommand(LifecycleCommand):
+    """Command to test the packed artifact."""
+
+    always_load_project = True
+
+    name = "test"
+    help_msg = "Test the packed artifact"
+    overview = textwrap.dedent(
+        """
+        Test the artifact after packing it.
+        """
+    )
+
+    @override
+    def _run(
+        self,
+        parsed_args: argparse.Namespace,
+        step_name: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Run the test command."""
+        shell = getattr(parsed_args, "shell", False)
+        shell_after = getattr(parsed_args, "shell_after", False)
+        debug = getattr(parsed_args, "debug", False)
+
+        # Prevent the steps in the prime command from using `--shell` or `--shell-after`
+        parsed_args.shell = False
+        parsed_args.shell_after = False
+        super()._run(parsed_args, step_name="prime")
+        self._run_post_prime_steps()
+
+        # Package artifact
+        try:
+            packages = self._services.package.pack(
+                self._services.lifecycle.prime_dir, parsed_args.output
+            )
+        except Exception as err:
+            if debug:
+                emit.progress(str(err), permanent=True)
+                _launch_shell()
+            raise
+
+        if parsed_args.fetch_service_policy and packages:
+            self._services.fetch.create_project_manifest(packages)
+
+        if not packages:
+            emit.progress("No artifacts to test.", permanent=True)
+            return
+
+        for pkg in packages:
+            test_artifact = pkg[0].name
+            craft_cli.emit.progress(f"Testing {test_artifact}...")
+
+            with tempfile.TemporaryDirectory(prefix=".craft-", dir=".") as tempdir:
+                destdir = pathlib.Path(tempdir)
+                self._services.testing.process_spread_yaml(destdir, test_artifact)
+                self._services.testing.run_spread(destdir)
 
 
 class CleanCommand(_BaseLifecycleCommand):
