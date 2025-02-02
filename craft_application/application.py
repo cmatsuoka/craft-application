@@ -679,6 +679,7 @@ class Application:
             self._emit_error(craft_cli.CraftError("Interrupted."), cause=err)
             return_code = 128 + signal.SIGINT
         except craft_cli.CraftError as err:
+            print(":::::::::::::::::: caught CraftError", err.__dict__)
             self._emit_error(err)
             return_code = err.retcode
         except craft_parts.PartsError as err:
@@ -720,6 +721,7 @@ class Application:
         if self.is_managed():
             error.logpath_report = False
 
+        print("####################", error.__dict__)
         craft_cli.emit.error(error)
 
     def _transform_project_yaml(

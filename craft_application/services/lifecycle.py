@@ -269,7 +269,12 @@ class LifecycleService(base.ProjectService):
                         aex.execute(action, stdout=stream, stderr=stream)
 
         except PartsError as err:
-            raise errors.PartsLifecycleError.from_parts_error(err) from err
+            print(">>>>>>>>>>>>>>>>>>>>>>>> catch the error:", err.__dict__)
+            print("@@@@@@ original details:", err._details)
+            print("@@@@@@ original details property:", err.details)
+            new_error = errors.PartsLifecycleError.from_parts_error(err)
+            print(">>>>>>>>>>>>>>>>>>>>>>>> new error:", new_error.__dict__)
+            raise new_error from err
         except RuntimeError as err:
             raise RuntimeError(f"Parts processing internal error: {err}") from err
         except OSError as err:
