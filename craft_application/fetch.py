@@ -102,6 +102,10 @@ class NetInfo:
         return {
             "http_proxy": self.http_proxy,
             "https_proxy": self.http_proxy,
+            # For urllib3
+            "HTTP_PROXY": self.http_proxy,
+            "HTTPS_PROXY": self.http_proxy,
+            "SSL_CERT_FILE": str(_FETCH_CERT_INSTANCE_PATH),
             # This makes the requests lib take our cert into account.
             "REQUESTS_CA_BUNDLE": str(_FETCH_CERT_INSTANCE_PATH),
             # Same, but for cargo.
@@ -284,7 +288,7 @@ def configure_instance(
     net_info = NetInfo(instance, session_data)
 
     _install_certificate(instance)
-    _configure_pip(instance)
+    _configure_pip(instance, net_info)
     _configure_snapd(instance, net_info)
     _configure_apt(instance, net_info)
 
@@ -364,14 +368,14 @@ def _install_certificate(instance: craft_providers.Executor) -> None:
     )
 
 
-def _configure_pip(instance: craft_providers.Executor) -> None:
+def _configure_pip(instance: craft_providers.Executor, net_info: NetInfo) -> None:
     logger.info("Configuring pip")
 
     _execute_run(instance, ["mkdir", "-p", "/root/.pip"])
-    pip_config = b"[global]\ncert=/usr/local/share/ca-certificates/local-ca.crt"
+    pip_config = f"[global]\ncert=/usr/local/share/ca-certificates/local-ca.crt\nproxy={net_info.http_proxy}"
     instance.push_file_io(
         destination=pathlib.Path("/root/.pip/pip.conf"),
-        content=io.BytesIO(pip_config),
+        content=io.BytesIO(pip_config.encode()),
         file_mode="0644",
     )
 
