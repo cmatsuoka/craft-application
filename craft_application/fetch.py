@@ -146,6 +146,7 @@ def start_service() -> subprocess.Popen[str] | None:
     # Add the ports
     cmd.append(f"--control-port={_DEFAULT_CONFIG.control}")
     cmd.append(f"--proxy-port={_DEFAULT_CONFIG.proxy}")
+    cmd.append(f"--verbosity=debug")
 
     # Set config and spool directories
     base_dir = _get_service_base_dir()
